@@ -4,6 +4,7 @@ import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 import java.io.IOException;
@@ -18,8 +19,13 @@ public class Bot extends TelegramLongPollingBot {
     private static final String PORT = System.getenv("PORT");
     @SneakyThrows
     public void run() {
-        TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
-        botsApi.registerBot(new Bot());
+        try {
+            TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
+            botsApi.registerBot(new Bot());
+        }catch (TelegramApiException t){
+            t.printStackTrace();
+        }
+
 
         try (ServerSocket serverSocket = new ServerSocket(Integer.parseInt(PORT))) {
             while (true) {
@@ -30,7 +36,7 @@ public class Bot extends TelegramLongPollingBot {
         }
     }
 
-    private BotCommands bc;
+    private BotCommands bc = new BotCommands();
     private static final HashMap<String, Method> commands = new HashMap<>();
 
     public Bot() {
@@ -67,12 +73,13 @@ public class Bot extends TelegramLongPollingBot {
         if (!update.hasMessage())
             return;
 
-        Message message = update.getMessage();
-        String chatId = String.valueOf(message.getChatId());
+        String chatId = String.valueOf(update.getMessage().getChatId());
         SendMessage sendMessage = new SendMessage();
         sendMessage.setChatId(chatId);
+        Message message = update.getMessage();
 
         String text = message.getText();
+
 
         if (text.isEmpty()) {
             sendMessage.setText("- Я вас не понимаю");
@@ -89,40 +96,54 @@ public class Bot extends TelegramLongPollingBot {
 
         Method m = commands.get(command);
 
+
         if(m == null) {
             String[] st = command.split(",|\\.|!|\\?"); // Закину сюда непонятные ответы для дальнейшей обработки
             try {
                 sendMessage.setText(bc.otherQuestions(st[0]));
+                try {
+                    execute(sendMessage);
+                    return;
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
+
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
 
-
         try {
-            String answer = (String) m.invoke(this, (Object) args);
+            String answer = (String) m.invoke(bc, (Object) args);
             if(m.isAnnotationPresent(Command.class)){
                 Command cmd = m.getAnnotation(Command.class);
                 String name = cmd.name().toLowerCase();
                 if(!name.equals("умения")){
                     if(name.equals("напоминалка")) {
-                        bc.previousAnswer = "напоминалка";
+
                         sendMessage.setText(answer);
                     }
                     if (name.equals("увлеченность_бота")){
-                        bc.previousAnswer = "увлеченность";
+
                         sendMessage.setText(answer);
                     }
-                    bc.previousAnswer = answer;
+
                 }
             }
             sendMessage.setText(answer);
-        } catch (Exception e) {
-            bc.previousAnswer = null;
+        }catch (NullPointerException n){
+            sendMessage.setText("Словили нул поинтер");
+        }
+        catch (Exception e) {
+
             sendMessage.setText("Что-то пошло не так, попробуйте ещё раз");
         }
 
-        execute(sendMessage);
+        try {
+            execute(sendMessage);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
 
     }
 

@@ -2,19 +2,24 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 
 public class BotCommands {
-    protected static String previousAnswer;
-    protected static int answerOfDoing;
+    public static String previousAnswer;
+    public static int answerOfDoing;
 
     @Command(id = 2, inProgress = false, name = "Приветствие", aliases = {"ку", "йоу", "привет"})
-    public String hello(String[] args) { return "- Привет!"; }
+    public String hello(String[] args) {
+        previousAnswer = "hello";
+        return "- Привет!"; }
 
     @Command(id = 3, inProgress = false, name = "Прощание", aliases = {"пока", "прощай", "увидимся"},
             description = "Прощается с собеседником")
-    public String bye(String[] args) { return "- До скорых встреч!"; }
+    public String bye(String[] args) {
+        previousAnswer = "bye";
+        return "- До скорых встреч!"; }
 
     @Command(id = 1, inProgress = false, name = "Умения", aliases = {"помощь", "помоги", "команды",
             "help", "sos"}, description = "Выводит список функций")
     public String help(String[] args) {
+        previousAnswer = "help";
         StringBuilder builder = new StringBuilder("Я исполняю такие команды:\n");
 
         for (Method m : this.getClass().getDeclaredMethods()) {
@@ -32,6 +37,7 @@ public class BotCommands {
 
     @Command(id = 4, inProgress = false, name = "Самочувствие", aliases = {"Че как?", "Как ты?", "Как дела?"}, description = "Скажет как у него дела.")
     public String howAreYou(String[] args){
+        previousAnswer = "feeling";
         int position = (int) (Math.random() * 3);
         switch (position){
             case 0:
@@ -50,6 +56,7 @@ public class BotCommands {
             description = "На вход получает дату и инфу которую надо будет напомнить",
             aliases = {"Напомни"})
     public String remindMe(String[] args){
+        previousAnswer = "напоминалка";
         String answer = "- " + args[0] + " я напомню вам: \"";
         for(int i = 1; i < args.length; i++){
             answer += " " + args[i];
@@ -105,6 +112,7 @@ public class BotCommands {
     @Command(id = 7, inProgress = false, name = "Увлеченность_бота", description = "Бот ответит чем он сейчас занимается",
             aliases = {"чем занят?", "что делаешь?", "чем занимаешься?"})
     public String whatAreYouDo(String[] args){
+        previousAnswer = "увлеченность";
         int position = (int) (Math.random() * 4);
         switch (position){
             case 0:
@@ -127,6 +135,7 @@ public class BotCommands {
     @Command(id = 8, inProgress = false, name = "Хэширование функции", args = "Принимает данные, которые нужно " +
             "захэшировать", description = "Бот пришлёт вам хэщированные данные", aliases = {"запароль", "скрой", "спрячь"})
     public String hashPassword(String[] args){
+        previousAnswer = "password";
         String answer = "";
         for (int i = 0; i < args.length; i++){
             answer += args[i] + " ";
